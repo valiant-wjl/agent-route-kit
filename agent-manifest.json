@@ -1,0 +1,70 @@
+{
+  "name": "agent-route-kit",
+  "purpose": "Agent-deployable local AI network routing control plane with stable AI egress, direct corporate/internal traffic, diagnostics, and local dashboard.",
+  "private_input_file": "agent-input.env",
+  "example_input_file": "agent-input.example.env",
+  "required_inputs": [
+    "LOCAL_PROXY_PORT",
+    "MIHOMO_API_PORT",
+    "NETWORK_SERVICE",
+    "RELAY_SSH_TARGET",
+    "RELAY_SING_BOX_CONFIG_PATH",
+    "RELAY_SING_BOX_SERVICE",
+    "AI_RELAY_HOST",
+    "AI_RELAY_PORT",
+    "HY2_PASSWORD",
+    "HY2_SNI",
+    "HY2_SKIP_CERT_VERIFY",
+    "HY2_UP",
+    "HY2_DOWN",
+    "STABLE_EGRESS_HTTP_HOST",
+    "STABLE_EGRESS_HTTP_PORT",
+    "STABLE_EGRESS_HTTP_USERNAME",
+    "STABLE_EGRESS_HTTP_PASSWORD",
+    "AI_DOMAINS"
+  ],
+  "optional_inputs": [
+    "CORPORATE_DOMAINS",
+    "DIRECT_DOMAINS",
+    "GENERAL_EGRESS_PROBE_URL",
+    "AI_ROUTE_PROBE_URL",
+    "DOMESTIC_PROBE_URL",
+    "CORPORATE_PROBE_HOST"
+  ],
+  "commands": {
+    "check_prereqs": "bash scripts/check-prereqs.sh agent-input.env",
+    "render": "python3 tools/render-config.py --env agent-input.env --out build",
+    "install_local_macos": "bash scripts/install-local-macos.sh build",
+    "deploy_relay": "bash scripts/deploy-relay.sh build",
+    "mode_on": "bash tools/net on",
+    "status": "bash tools/net status",
+    "diagnose": "bash tools/diagnose",
+    "dashboard": "python3 dashboard/server.py",
+    "smoke": "make smoke"
+  },
+  "generated_artifacts": [
+    "build/mihomo/config.yaml",
+    "build/sing-box/config.json",
+    "build/claude-code/settings.json",
+    "build/deployment-metadata.json"
+  ],
+  "completion_evidence": [
+    "configs render successfully",
+    "generated sing-box JSON is valid",
+    "generated AI tool settings JSON is valid",
+    "local router config validates with mihomo when installed",
+    "relay service reports active after deployment",
+    "local router API responds",
+    "AI provider domains are routed through ai-route",
+    "corporate/internal domains route DIRECT when configured",
+    "make smoke passes"
+  ],
+  "never_commit": [
+    "agent-input.env",
+    "build/",
+    "logs",
+    "private keys",
+    "QR codes with embedded secrets",
+    "generated configs containing credentials"
+  ]
+}

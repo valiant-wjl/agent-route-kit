@@ -1,0 +1,9 @@
+agent-input.env
+build/
+__pycache__/
+*.pyc
+*.log
+*.secret
+*.pem
+*.key
+*.qr.png

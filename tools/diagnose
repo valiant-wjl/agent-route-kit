@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MIHOMO_API_PORT_VALUE="${MIHOMO_API_PORT:-9090}"
+LOCAL_PROXY_PORT_VALUE="${LOCAL_PROXY_PORT:-7890}"
+MIHOMO_API="${MIHOMO_API:-http://127.0.0.1:${MIHOMO_API_PORT_VALUE}}"
+PROXY_PORT="${PROXY_PORT:-${LOCAL_PROXY_PORT_VALUE}}"
+GENERAL_EGRESS_PROBE_URL="${GENERAL_EGRESS_PROBE_URL:-https://ipinfo.io/ip}"
+AI_ROUTE_PROBE_URL="${AI_ROUTE_PROBE_URL:-https://api.anthropic.com/}"
+CORPORATE_PROBE_HOST="${CORPORATE_PROBE_HOST:-}"
+CURL_BIN="${CURL_BIN:-curl}"
+
+ok() { printf "OK   %s\n" "$*"; }
+warn() { printf "WARN %s\n" "$*"; }
+fail() { printf "FAIL %s\n" "$*"; }
+
+if "$CURL_BIN" -fsS --max-time 3 "$MIHOMO_API/version" >/dev/null; then
+  ok "mihomo API reachable"
+else
+  fail "mihomo API unreachable at $MIHOMO_API"
+fi
+
+if pgrep -f mihomo >/dev/null 2>&1; then
+  ok "mihomo process running"
+else
+  fail "mihomo process not found"
+fi
+
+if "$CURL_BIN" -fsS --max-time 8 -x "http://127.0.0.1:$PROXY_PORT" "$GENERAL_EGRESS_PROBE_URL" >/dev/null; then
+  ok "general proxy probe succeeded"
+else
+  warn "general proxy probe failed"
+fi
+
+if "$CURL_BIN" -sS --max-time 8 -x "http://127.0.0.1:$PROXY_PORT" "$AI_ROUTE_PROBE_URL" -o /dev/null; then
+  ok "AI route probe reached target"
+else
+  warn "AI route probe failed"
+fi
+
+if [ -n "$CORPORATE_PROBE_HOST" ]; then
+  if dscacheutil -q host -a name "$CORPORATE_PROBE_HOST" >/dev/null 2>&1; then
+    ok "native resolver can resolve $CORPORATE_PROBE_HOST"
+  else
+    warn "native resolver cannot resolve $CORPORATE_PROBE_HOST"
+  fi
+fi

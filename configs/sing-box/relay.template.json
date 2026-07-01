@@ -1,0 +1,48 @@
+{
+  "log": {
+    "level": "info",
+    "timestamp": true
+  },
+  "inbounds": [
+    {
+      "type": "hysteria2",
+      "tag": "hy2-in",
+      "listen": "::",
+      "listen_port": ${AI_RELAY_PORT},
+      "users": [
+        {
+          "password": "${HY2_PASSWORD}"
+        }
+      ],
+      "tls": {
+        "enabled": true,
+        "server_name": "${HY2_SNI}",
+        "certificate_path": "/etc/sing-box/cert/cert.pem",
+        "key_path": "/etc/sing-box/cert/key.pem"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "http",
+      "tag": "stable-ai-egress",
+      "server": "${STABLE_EGRESS_HTTP_HOST}",
+      "server_port": ${STABLE_EGRESS_HTTP_PORT},
+      "username": "${STABLE_EGRESS_HTTP_USERNAME}",
+      "password": "${STABLE_EGRESS_HTTP_PASSWORD}"
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "domain_suffix": ${AI_DOMAIN_JSON_ARRAY},
+        "outbound": "stable-ai-egress"
+      }
+    ],
+    "final": "direct"
+  }
+}

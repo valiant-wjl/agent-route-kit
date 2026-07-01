@@ -1,0 +1,6 @@
+direct_domains:
+  - example.cn
+  - local-bank.example
+
+geoip_direct:
+  - CN

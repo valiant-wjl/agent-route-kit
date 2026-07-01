@@ -1,0 +1,7 @@
+{
+  "env": {
+    "HTTPS_PROXY": "http://127.0.0.1:${LOCAL_PROXY_PORT}",
+    "HTTP_PROXY": "http://127.0.0.1:${LOCAL_PROXY_PORT}",
+    "DISABLE_TELEMETRY": "1"
+  }
+}

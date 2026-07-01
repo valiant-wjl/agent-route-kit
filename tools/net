@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MIHOMO_API_PORT_VALUE="${MIHOMO_API_PORT:-9090}"
+LOCAL_PROXY_PORT_VALUE="${LOCAL_PROXY_PORT:-7890}"
+MIHOMO_API="${MIHOMO_API:-http://127.0.0.1:${MIHOMO_API_PORT_VALUE}}"
+PROXY_PORT="${PROXY_PORT:-${LOCAL_PROXY_PORT_VALUE}}"
+NETWORK_SERVICE="${NETWORK_SERVICE:-Wi-Fi}"
+NETWORKSETUP_BIN="${NETWORKSETUP_BIN:-networksetup}"
+CURL_BIN="${CURL_BIN:-curl}"
+
+usage() {
+  cat <<USAGE
+Usage: net <on|ai-only|bypass|status|mode>
+
+Modes:
+  on       system HTTP/HTTPS proxy ON, unmatched traffic follows Global relay
+  ai-only  system proxy OFF, only explicit proxy users and Claude rules use router
+  bypass   system proxy OFF, ai-route set to DIRECT
+  status   print router mode, ai-route, process state, and egress probe
+USAGE
+}
+
+api_put_group() {
+  local group="$1"
+  local name="$2"
+  "$CURL_BIN" -fsS -X PUT "$MIHOMO_API/proxies/$group" \
+    -H "Content-Type: application/json" \
+    -d "{\"name\":\"$name\"}" >/dev/null
+}
+
+disable_system_proxy() {
+  "$NETWORKSETUP_BIN" -setwebproxystate "$NETWORK_SERVICE" off || true
+  "$NETWORKSETUP_BIN" -setsecurewebproxystate "$NETWORK_SERVICE" off || true
+  "$NETWORKSETUP_BIN" -setsocksfirewallproxystate "$NETWORK_SERVICE" off || true
+}
+
+enable_system_proxy() {
+  "$NETWORKSETUP_BIN" -setwebproxy "$NETWORK_SERVICE" 127.0.0.1 "$PROXY_PORT"
+  "$NETWORKSETUP_BIN" -setsecurewebproxy "$NETWORK_SERVICE" 127.0.0.1 "$PROXY_PORT"
+  "$NETWORKSETUP_BIN" -setsocksfirewallproxystate "$NETWORK_SERVICE" off
+}
+
+json_now() {
+  "$CURL_BIN" -fsS "$MIHOMO_API/proxies/$1" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("now", ""))'
+}
+
+case "${1:-status}" in
+  on)
+    api_put_group ai-route ai-relay || true
+    api_put_group MODE Global || true
+    enable_system_proxy
+    echo "mode=on system_proxy=127.0.0.1:$PROXY_PORT router_mode=Global"
+    ;;
+  ai-only|ai_only)
+    disable_system_proxy
+    api_put_group ai-route ai-relay || true
+    api_put_group MODE "AI Only" || true
+    echo "mode=ai-only system_proxy=off router_mode=AI Only"
+    ;;
+  bypass)
+    disable_system_proxy
+    api_put_group ai-route DIRECT || true
+    api_put_group MODE Bypass || true
+    echo "mode=bypass system_proxy=off ai-route=DIRECT"
+    ;;
+  mode)
+    echo "MODE=$(json_now MODE)"
+    echo "ai-route=$(json_now ai-route)"
+    ;;
+  status)
+    echo "MODE=$(json_now MODE 2>/dev/null || echo unavailable)"
+    echo "ai-route=$(json_now ai-route 2>/dev/null || echo unavailable)"
+    echo "router=$(pgrep -f mihomo >/dev/null 2>&1 && echo running || echo down)"
+    echo "proxy_port=$PROXY_PORT"
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

@@ -1,0 +1,7 @@
+corporate_domains:
+  - corp.example
+  - internal.example
+  - cdn.corp.example
+
+corporate_dns_policy:
+  resolver: system

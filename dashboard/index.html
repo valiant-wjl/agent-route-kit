@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AgentRouteKit</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f8fa;
+      --fg: #15171a;
+      --muted: #667085;
+      --line: #d0d5dd;
+      --panel: #ffffff;
+      --accent: #1f7a5a;
+      --warn: #a15c00;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101214;
+        --fg: #eef0f2;
+        --muted: #9aa4b2;
+        --line: #30363d;
+        --panel: #171a1f;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 28px 18px;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 24px;
+      letter-spacing: 0;
+    }
+    p { margin: 0; color: var(--muted); }
+    .state {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 18px 0;
+    }
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--fg);
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+      min-width: 86px;
+    }
+    button.primary {
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    button.warning {
+      border-color: var(--warn);
+      color: var(--warn);
+    }
+    section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      margin-top: 14px;
+      overflow: hidden;
+    }
+    section h2 {
+      margin: 0;
+      padding: 12px 14px;
+      font-size: 15px;
+      border-bottom: 1px solid var(--line);
+    }
+    pre {
+      margin: 0;
+      padding: 14px;
+      min-height: 120px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>AgentRouteKit</h1>
+    <p>Local routing, diagnostics, and mode switching.</p>
+    <div class="state" id="state">Ready</div>
+
+    <div class="actions">
+      <button class="primary" data-action="status">Status</button>
+      <button data-action="diagnose">Diagnose</button>
+      <button data-action="on">On</button>
+      <button data-action="ai-only">AI Only</button>
+      <button class="warning" data-action="bypass">Bypass</button>
+    </div>
+
+    <section>
+      <h2>Output</h2>
+      <pre id="output"></pre>
+    </section>
+  </main>
+
+  <script>
+    const state = document.getElementById("state");
+    const output = document.getElementById("output");
+
+    async function run(action) {
+      state.textContent = `Running ${action}...`;
+      output.textContent = "";
+      try {
+        const response = await fetch(`/api/${action}`, { method: "POST" });
+        const data = await response.json();
+        output.textContent = data.output || data.error || "";
+        state.textContent = data.ok ? "Done" : `Failed with exit ${data.exit_code}`;
+      } catch (error) {
+        output.textContent = String(error);
+        state.textContent = "Request failed";
+      }
+    }
+
+    document.querySelectorAll("button[data-action]").forEach((button) => {
+      button.addEventListener("click", () => run(button.dataset.action));
+    });
+
+    run("status");
+  </script>
+</body>
+</html>
