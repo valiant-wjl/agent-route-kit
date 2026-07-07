@@ -39,11 +39,16 @@ AgentRouteKit 解决的是网络路由、稳定出口、诊断和运维问题。
 
 ```mermaid
 flowchart LR
-  subgraph Client["本地设备"]
+  subgraph Desktop["电脑端"]
     Tools["AI 工具"]
     Apps["普通应用"]
-    Router["本地策略路由<br/>mihomo"]
+    Router["电脑端策略路由<br/>mihomo"]
     Ops["net CLI / Dashboard"]
+  end
+
+  subgraph Mobile["手机端"]
+    MobileApps["手机 App"]
+    MobileRouter["手机代理客户端<br/>Mihomo / Clash 兼容"]
   end
 
   subgraph Relay["中继节点"]
@@ -58,10 +63,13 @@ flowchart LR
   Tools --> Router
   Apps --> Router
   Ops --> Router
+  MobileApps --> MobileRouter
   Router -- AI provider 域名 --> Tunnel --> Policy --> Stable --> AI["AI provider APIs"]
   Router -- 公司/内网域名 --> Direct["DIRECT + 系统解析器"]
   Router -- 国内域名 --> Direct
   Router -- 其他海外流量 --> Tunnel --> Policy --> Internet["中继直出"]
+  MobileRouter -- 同一套 AI/地区分流策略 --> Tunnel
+  MobileRouter -- 私网/公司/国内规则 --> Direct
 ```
 
 核心思想是先分类，再传输：
@@ -70,6 +78,16 @@ flowchart LR
 2. 公司内网、内部 CDN、国内域名和私网 IP 直连。
 3. 其他未命中的流量按当前模式处理。
 4. 切换、诊断、重启和验证都通过固定命令完成，便于人和 agent 共用。
+
+## 手机端方案
+
+手机端复用同一套路由策略：先按域名和网段分类，再决定直连、中继或稳定 AI 出口。当前仓库的自动安装脚本主要覆盖电脑端 macOS；手机端通常是把等价的 Mihomo/Clash 配置或规则片段导入到支持的客户端里。
+
+- iOS/iPadOS：可以看 [Shadowrocket / 小火箭](https://apps.apple.com/us/app/shadowrocket/id932747118) 或 [Stash](https://stash.ws/) 这类规则型客户端。购买和下载建议走官方 App Store 路径；不要使用共享 Apple ID、破解版或企业签名包。
+- Android：可以看 [FlClash](https://github.com/chen08209/FlClash) 这类开源 Mihomo/ClashMeta 客户端。不同客户端对 Hysteria2、rule-provider、MRS 规则集的支持会变化，选型前可以先看 [Hysteria 2 第三方应用列表](https://v2.hysteria.network/zh/docs/getting-started/3rd-party-apps/)。
+- 路由规则 Demo：见 [policy/routing-demo.yaml](policy/routing-demo.yaml)。里面用 `corp.example`、`internal.example` 等占位符替代真实内网域名，公开提交前不要写入公司或个人内网后缀。
+
+更详细的手机端导入方式和检查清单见 [docs/mobile-clients.md](docs/mobile-clients.md)。通用域名规则可以参考 [Mihomo rule-provider 文档](https://wiki.metacubex.one/en/config/rule-providers/)、[MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat)、[Loyalsoldier/clash-rules](https://github.com/Loyalsoldier/clash-rules) 和 [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script)，按客户端支持的格式自行选择。
 
 ## 人需要提供什么
 

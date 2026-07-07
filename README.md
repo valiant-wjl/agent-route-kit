@@ -37,11 +37,16 @@ This is a network routing and operations project. It does not guarantee account 
 
 ```mermaid
 flowchart LR
-  subgraph Client["Client device"]
+  subgraph Desktop["Desktop client"]
     Tools["AI tools"]
     Apps["Normal apps"]
-    Router["Local policy router<br/>mihomo"]
+    Router["Desktop policy router<br/>mihomo"]
     Ops["net CLI / dashboard"]
+  end
+
+  subgraph Mobile["Mobile client"]
+    MobileApps["Mobile apps"]
+    MobileRouter["Mobile proxy client<br/>Mihomo / Clash-compatible"]
   end
 
   subgraph Relay["Relay host"]
@@ -56,11 +61,24 @@ flowchart LR
   Tools --> Router
   Apps --> Router
   Ops --> Router
+  MobileApps --> MobileRouter
   Router -- AI provider domains --> Tunnel --> Policy --> Stable --> AI["AI provider APIs"]
   Router -- corporate/internal domains --> Direct["DIRECT + native resolver"]
   Router -- domestic domains --> Direct
   Router -- general overseas traffic --> Tunnel --> Policy --> Internet["Relay direct egress"]
+  MobileRouter -- same AI/provider/region policy --> Tunnel
+  MobileRouter -- private/corporate/domestic rules --> Direct
 ```
+
+## Mobile Clients
+
+The mobile version uses the same routing policy model as the desktop version: classify domains first, then choose direct, relay, or stable AI egress. The current automation scripts install the desktop macOS router; mobile devices import an equivalent Mihomo/Clash-style profile or copy the same rule blocks into a compatible app.
+
+- iOS/iPadOS: [Shadowrocket](https://apps.apple.com/us/app/shadowrocket/id932747118) and [Stash](https://stash.ws/) are common rule-based clients. Buy/download through the official App Store path for your region and avoid shared Apple IDs, cracked builds, or enterprise-signed packages.
+- Android: [FlClash](https://github.com/chen08209/FlClash) is an open-source Mihomo/ClashMeta-style client. Check the [Hysteria 2 third-party app list](https://v2.hysteria.network/docs/getting-started/3rd-party-apps/) when you need current protocol support across apps.
+- Reusable rules: start from [policy/routing-demo.yaml](policy/routing-demo.yaml), keep real corporate/internal suffixes private, and replace only the placeholder domains and proxy group names.
+
+More detail is in [docs/mobile-clients.md](docs/mobile-clients.md). For maintained public domain sets, see the [Mihomo rule-provider docs](https://wiki.metacubex.one/en/config/rule-providers/), [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat), [Loyalsoldier/clash-rules](https://github.com/Loyalsoldier/clash-rules), and [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script).
 
 ## Product Principles
 
@@ -159,13 +177,15 @@ Open `http://127.0.0.1:8765` to inspect status, run diagnostics, and switch mode
 ├── docs/
 │   ├── AGENT_DEPLOYMENT.md
 │   ├── architecture.md
+│   ├── mobile-clients.md
 │   ├── operations-dashboard.md
 │   ├── policy-model.md
 │   └── security-and-privacy.md
 ├── policy/
 │   ├── ai-providers.yaml
 │   ├── corporate.example.yaml
-│   └── domestic.example.yaml
+│   ├── domestic.example.yaml
+│   └── routing-demo.yaml
 ├── scripts/
 │   ├── check-prereqs.sh
 │   ├── deploy-relay.sh

@@ -1,0 +1,72 @@
+# Copyable Mihomo/Clash-style routing demo for desktop or mobile clients.
+#
+# Replace these placeholders before private use:
+# - ai-route: proxy group for stable AI egress.
+# - MODE: default proxy group for general overseas or unmatched traffic.
+# - corp.example / internal.example / cdn.corp.example: private corporate suffixes.
+#
+# Do not commit real company domains, private DNS suffixes, relay hostnames,
+# proxy credentials, or generated profiles with secrets.
+#
+# If your mobile client does not support MRS rule providers, keep the rule
+# order below but switch to the rule-provider format supported by that client.
+
+dns:
+  nameserver-policy:
+    # Optional but important for VPN/MDM/internal DNS environments.
+    # Use the native/system resolver for private suffixes when supported.
+    "+.corp.example": system
+    "+.internal.example": system
+    "+.cdn.corp.example": system
+
+rule-providers:
+  cn:
+    type: http
+    behavior: domain
+    format: mrs
+    interval: 86400
+    path: ./ruleset/geosite-cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.mrs"
+
+  geolocation-not-cn:
+    type: http
+    behavior: domain
+    format: mrs
+    interval: 86400
+    path: ./ruleset/geosite-geolocation-not-cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/geolocation-!cn.mrs"
+
+rules:
+  # 0. Device-local and private networks never leave the local path.
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+
+  # 1. Redacted corporate/internal examples. Keep real suffixes private.
+  - DOMAIN-SUFFIX,corp.example,DIRECT
+  - DOMAIN-SUFFIX,internal.example,DIRECT
+  - DOMAIN-SUFFIX,cdn.corp.example,DIRECT
+
+  # 2. AI providers use the stable AI route.
+  - DOMAIN-SUFFIX,anthropic.com,ai-route
+  - DOMAIN-SUFFIX,claude.ai,ai-route
+  - DOMAIN-SUFFIX,claudeusercontent.com,ai-route
+  - DOMAIN-SUFFIX,openai.com,ai-route
+  - DOMAIN-SUFFIX,chatgpt.com,ai-route
+
+  # 3. Domestic/direct examples and maintained CN rule set.
+  - DOMAIN-SUFFIX,example.cn,DIRECT
+  - DOMAIN-SUFFIX,local-bank.example,DIRECT
+  - RULE-SET,cn,DIRECT
+  - GEOIP,CN,DIRECT,no-resolve
+
+  # 4. General overseas examples and maintained non-CN rule set.
+  - DOMAIN-SUFFIX,github.com,MODE
+  - DOMAIN-SUFFIX,google.com,MODE
+  - DOMAIN-SUFFIX,youtube.com,MODE
+  - RULE-SET,geolocation-not-cn,MODE
+
+  # 5. Everything else follows the selected default mode.
+  - MATCH,MODE

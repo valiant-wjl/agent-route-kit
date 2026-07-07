@@ -23,6 +23,7 @@ flowchart TD
 - `policy/ai-providers.yaml`: domains that require stable AI egress.
 - `policy/corporate.example.yaml`: example structure for company/internal domains.
 - `policy/domestic.example.yaml`: domains that should stay local/direct.
+- `policy/routing-demo.yaml`: copyable Mihomo/Clash-style demo for desktop or mobile clients.
 
 ## Corporate/Internal Domains
 
@@ -42,3 +43,15 @@ nameserver-policy:
 rules:
   - DOMAIN-SUFFIX,corp.example,DIRECT
 ```
+
+## Public Rule Sources
+
+Use project-local policy for sensitive or account-specific domains, then optionally layer public rule sets for broad country/region/application coverage.
+
+- Mihomo rule syntax: <https://wiki.metacubex.one/en/config/rules/>
+- Mihomo rule providers: <https://wiki.metacubex.one/en/config/rule-providers/>
+- MetaCubeX MRS rule sets: <https://github.com/MetaCubeX/meta-rules-dat>
+- Clash Premium text rule sets: <https://github.com/Loyalsoldier/clash-rules>
+- App-specific rule collections: <https://github.com/blackmatrix7/ios_rule_script>
+
+Keep real corporate/internal suffixes out of public rule providers and public commits. Use placeholders such as `corp.example` in examples, then apply the private suffix list only in local profiles or private input files.
